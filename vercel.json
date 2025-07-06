@@ -27,7 +27,12 @@
       "dest": "/index.html"
     }
   ],
+  "functions": {
+    "server/index.js": {
+      "maxDuration": 30
+    }
+  },
   "env": {
-    "REACT_APP_API_URL": "https://your-vercel-app.vercel.app/api"
+    "REACT_APP_API_URL": "/api"
   }
 } 

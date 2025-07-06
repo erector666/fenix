@@ -11,11 +11,16 @@ const prisma = new PrismaClient();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://your-vercel-app.vercel.app', 'https://your-vercel-app.vercel.app']
+    : ['http://localhost:3000', 'http://localhost:3001'],
+  credentials: true
+}));
 app.use(express.json());
 
-// JWT Authentication Middleware
-const authenticateToken = (req, res, next) => {
+// JWT middleware
+function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -23,14 +28,14 @@ const authenticateToken = (req, res, next) => {
     return res.status(401).json({ error: 'Access token required' });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+  jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key', (err, user) => {
     if (err) {
       return res.status(403).json({ error: 'Invalid token' });
     }
     req.user = user;
     next();
   });
-};
+}
 
 // Admin Middleware
 const requireAdmin = (req, res, next) => {
@@ -53,23 +58,13 @@ app.post('/api/auth/login', async (req, res) => {
       where: { email }
     });
 
-    if (!user || !user.isActive) {
-      return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    const isValidPassword = await bcrypt.compare(password, user.password);
-    if (!isValidPassword) {
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const token = jwt.sign(
-      { 
-        id: user.id, 
-        email: user.email, 
-        name: user.name, 
-        role: user.role 
-      },
-      process.env.JWT_SECRET,
+      { userId: user.id, email: user.email, role: user.role },
+      process.env.JWT_SECRET || 'your-secret-key',
       { expiresIn: '24h' }
     );
 
@@ -96,20 +91,16 @@ app.post('/api/auth/login', async (req, res) => {
 app.get('/api/users', authenticateToken, requireAdmin, async (req, res) => {
   try {
     const users = await prisma.user.findMany({
-      where: { isActive: true },
       select: {
         id: true,
-        name: true,
         email: true,
+        name: true,
         role: true,
-        createdAt: true,
-        _count: {
-          select: {
-            workSessions: true
-          }
-        }
+        isActive: true,
+        createdAt: true
       }
     });
+
     res.json(users);
   } catch (error) {
     console.error('Get users error:', error);
@@ -121,18 +112,17 @@ app.get('/api/users', authenticateToken, requireAdmin, async (req, res) => {
 app.get('/api/users/me', authenticateToken, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        role: true,
-        createdAt: true
-      }
+      where: { id: req.user.userId }
     });
-    res.json(user);
+
+    res.json({
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      role: user.role
+    });
   } catch (error) {
-    console.error('Get current user error:', error);
+    console.error('Get user error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -145,9 +135,9 @@ app.get('/api/users/me', authenticateToken, async (req, res) => {
 app.get('/api/vehicles', authenticateToken, async (req, res) => {
   try {
     const vehicles = await prisma.vehicle.findMany({
-      where: { isActive: true },
-      orderBy: { name: 'asc' }
+      where: { isActive: true }
     });
+
     res.json(vehicles);
   } catch (error) {
     console.error('Get vehicles error:', error);
@@ -177,28 +167,26 @@ app.post('/api/vehicles', authenticateToken, requireAdmin, async (req, res) => {
 app.post('/api/work-sessions/start', authenticateToken, async (req, res) => {
   try {
     const { vehicleId, startLocation, workDescription, startKilometers } = req.body;
-    
+
     const session = await prisma.workSession.create({
       data: {
-        userId: req.user.id,
-        vehicleId: vehicleId || null,
+        userId: req.user.userId,
+        vehicleId,
         startTime: new Date(),
         startLocation,
         workDescription,
-        startKilometers: startKilometers || null,
+        startKilometers,
         status: 'ACTIVE'
       },
       include: {
-        user: {
-          select: { name: true, email: true }
-        },
+        user: true,
         vehicle: true
       }
     });
 
-    res.json(session);
+    res.status(201).json(session);
   } catch (error) {
-    console.error('Start work session error:', error);
+    console.error('Start session error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -207,29 +195,12 @@ app.post('/api/work-sessions/start', authenticateToken, async (req, res) => {
 app.put('/api/work-sessions/:id/end', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
-    const { endLocation, endKilometers } = req.body;
+    const { endLocation, endKilometers, totalKilometers, totalHours } = req.body;
 
-    const session = await prisma.workSession.findFirst({
-      where: { id: parseInt(id), userId: req.user.id }
-    });
-
-    if (!session) {
-      return res.status(404).json({ error: 'Work session not found' });
-    }
-
-    const endTime = new Date();
-    const totalHours = (endTime - session.startTime) / (1000 * 60 * 60);
-    
-    // Calculate total kilometers traveled
-    let totalKilometers = null;
-    if (session.startKilometers && endKilometers) {
-      totalKilometers = endKilometers - session.startKilometers;
-    }
-
-    const updatedSession = await prisma.workSession.update({
+    const session = await prisma.workSession.update({
       where: { id: parseInt(id) },
       data: {
-        endTime,
+        endTime: new Date(),
         endLocation,
         endKilometers,
         totalKilometers,
@@ -237,16 +208,14 @@ app.put('/api/work-sessions/:id/end', authenticateToken, async (req, res) => {
         totalHours
       },
       include: {
-        user: {
-          select: { name: true, email: true }
-        },
+        user: true,
         vehicle: true
       }
     });
 
-    res.json(updatedSession);
+    res.json(session);
   } catch (error) {
-    console.error('End work session error:', error);
+    console.error('End session error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -258,7 +227,7 @@ app.put('/api/work-sessions/:id/pause', authenticateToken, async (req, res) => {
     const { reason } = req.body;
 
     const session = await prisma.workSession.findFirst({
-      where: { id: parseInt(id), userId: req.user.id }
+      where: { id: parseInt(id), userId: req.user.userId }
     });
 
     if (!session) {
@@ -302,7 +271,7 @@ app.put('/api/work-sessions/:id/resume', authenticateToken, async (req, res) => 
     const { id } = req.params;
 
     const session = await prisma.workSession.findFirst({
-      where: { id: parseInt(id), userId: req.user.id },
+      where: { id: parseInt(id), userId: req.user.userId },
       include: { breaks: true }
     });
 
@@ -353,39 +322,23 @@ app.put('/api/work-sessions/:id/resume', authenticateToken, async (req, res) => 
 // Get work sessions for user
 app.get('/api/work-sessions', authenticateToken, async (req, res) => {
   try {
-    const { status, startDate, endDate, limit = 50 } = req.query;
-    
-    const where = { userId: req.user.id };
-    
-    if (status) {
-      where.status = status;
-    }
-    
-    if (startDate && endDate) {
-      where.startTime = {
-        gte: new Date(startDate),
-        lte: new Date(endDate)
-      };
-    }
-
     const sessions = await prisma.workSession.findMany({
-      where,
-      include: {
-        user: {
-          select: { name: true, email: true }
-        },
-        vehicle: true,
-        breaks: {
-          orderBy: { startTime: 'desc' }
-        }
+      where: {
+        userId: req.user.userId
       },
-      orderBy: { startTime: 'desc' },
-      take: parseInt(limit)
+      include: {
+        user: true,
+        vehicle: true,
+        breaks: true
+      },
+      orderBy: {
+        startTime: 'desc'
+      }
     });
 
     res.json(sessions);
   } catch (error) {
-    console.error('Get work sessions error:', error);
+    console.error('Get sessions error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -441,12 +394,12 @@ app.get('/api/admin/work-sessions', authenticateToken, requireAdmin, async (req,
 // Update location
 app.post('/api/location', authenticateToken, async (req, res) => {
   try {
-    const { latitude, longitude, accuracy, address, workSessionId } = req.body;
+    const { workSessionId, latitude, longitude, accuracy, address } = req.body;
 
     const location = await prisma.location.create({
       data: {
-        userId: req.user.id,
-        workSessionId: workSessionId || null,
+        userId: req.user.userId,
+        workSessionId,
         latitude,
         longitude,
         accuracy,
@@ -454,9 +407,9 @@ app.post('/api/location', authenticateToken, async (req, res) => {
       }
     });
 
-    res.json(location);
+    res.status(201).json(location);
   } catch (error) {
-    console.error('Update location error:', error);
+    console.error('Location error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -499,8 +452,10 @@ app.get('/api/stats/user', authenticateToken, async (req, res) => {
   try {
     const { startDate, endDate } = req.query;
     
-    const where = { userId: req.user.id };
-    
+    const where = {
+      userId: req.user.userId
+    };
+
     if (startDate && endDate) {
       where.startTime = {
         gte: new Date(startDate),
@@ -510,52 +465,23 @@ app.get('/api/stats/user', authenticateToken, async (req, res) => {
 
     const sessions = await prisma.workSession.findMany({
       where,
-      select: {
-        startTime: true,
-        endTime: true,
-        totalHours: true,
-        breakDuration: true,
-        kilometers: true
+      include: {
+        vehicle: true
       }
     });
 
-    const totalHours = sessions.reduce((sum, session) => {
-      return sum + (session.totalHours || 0);
-    }, 0);
-
-    const totalBreakHours = sessions.reduce((sum, session) => {
-      return sum + (session.breakDuration || 0) / 60;
-    }, 0);
-
-    const totalKilometers = sessions.reduce((sum, session) => {
-      return sum + (session.kilometers || 0);
-    }, 0);
-
-    const today = new Date();
-    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-
-    const todaySessions = sessions.filter(s => s.startTime >= startOfDay);
-    const monthSessions = sessions.filter(s => s.startTime >= startOfMonth);
-
-    const todayHours = todaySessions.reduce((sum, session) => {
-      return sum + (session.totalHours || 0);
-    }, 0);
-
-    const monthHours = monthSessions.reduce((sum, session) => {
-      return sum + (session.totalHours || 0);
-    }, 0);
+    const totalHours = sessions.reduce((sum, session) => sum + (session.totalHours || 0), 0);
+    const totalSessions = sessions.length;
+    const totalKilometers = sessions.reduce((sum, session) => sum + (session.totalKilometers || 0), 0);
 
     res.json({
       totalHours,
-      totalBreakHours,
+      totalSessions,
       totalKilometers,
-      todayHours,
-      monthHours,
-      totalSessions: sessions.length
+      sessions
     });
   } catch (error) {
-    console.error('Get user stats error:', error);
+    console.error('Stats error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -641,15 +567,18 @@ app.use('*', (req, res) => {
 // START SERVER
 // =============================================================================
 
-app.listen(PORT, () => {
-  console.log(`🚀 FENIX Construction Tracker API running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-  console.log(`🔧 Prisma Studio: npx prisma studio`);
-});
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+  });
+}
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
   console.log('\n🛑 Shutting down gracefully...');
   await prisma.$disconnect();
   process.exit(0);
-}); 
+});
+
+module.exports = app; 
