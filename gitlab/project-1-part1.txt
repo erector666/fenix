@@ -1,0 +1,47 @@
+--- FILE: package.json ---
+
+// ... package.json content ...
+
+--- FILE: .gitignore ---
+
+// ... .gitignore content ...
+
+--- FILE: env.example ---
+
+// ... env.example content ...
+
+--- FILE: prisma/schema.prisma ---
+
+// ... schema.prisma content ...
+
+--- FILE: server/index.js ---
+
+// ... index.js content ...
+
+--- FILE: server/seed.js ---
+
+// ... seed.js content ...
+
+--- FILE: server/migrate-localStorage.js ---
+
+// ... migrate-localStorage.js content ...
+
+--- FILE: DATABASE_SETUP.md ---
+
+// ... DATABASE_SETUP.md content ...
+
+--- FILE: ENVIRONMENT_SETUP.md ---
+
+// ... ENVIRONMENT_SETUP.md content ...
+
+--- FILE: ENV_QUICK_REFERENCE.md ---
+
+// ... ENV_QUICK_REFERENCE.md content ...
+
+--- FILE: setup-env.js ---
+
+// ... setup-env.js content ...
+
+--- FILE: quick-start.js ---
+
+// ... quick-start.js content ... 

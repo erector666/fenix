@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>FENIX Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+        }
+        .login-box {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        .logo-container {
+            margin-bottom: 30px;
+        }
+        .logo-image {
+            max-width: 200px;
+            max-height: 100px;
+            object-fit: contain;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #f97316;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #ea580c;
+        }
+        .credentials {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #666;
+        }
+        .dashboard {
+            display: none;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            min-width: 300px;
+        }
+    </style>
+</head>
+<body>
+    <div id="loginScreen" class="login-box">
+        <div class="logo-container">
+            <img src="fenix.png" alt="FENIX Logo" class="logo-image">
+        </div>
+        <h1>Construction Tracker</h1>
+        <input type="email" id="email" placeholder="Email" value="admin@fenix.com">
+        <input type="password" id="password" placeholder="Password" value="admin123">
+        <button onclick="testLogin()">Login</button>
+        <div class="credentials">
+            <p><strong>Test Credentials:</strong></p>
+            <p>Admin: admin@fenix.com / admin123</p>
+            <p>Worker: john@fenix.com / worker123</p>
+        </div>
+    </div>
+
+    <div id="adminDashboard" class="dashboard">
+        <h1>Admin Dashboard</h1>
+        <p>Welcome, Admin!</p>
+        <p>This is the admin dashboard.</p>
+        <button onclick="logout()">Logout</button>
+    </div>
+
+    <div id="workerDashboard" class="dashboard">
+        <h1>Worker Dashboard</h1>
+        <p>Welcome, Worker!</p>
+        <p>This is the worker dashboard.</p>
+        <button onclick="logout()">Logout</button>
+    </div>
+
+    <script>
+        function testLogin() {
+            alert("Login button clicked!");
+            
+            var email = document.getElementById('email').value;
+            var password = document.getElementById('password').value;
+            
+            alert("Email: " + email + ", Password: " + password);
+            
+            if (email === 'admin@fenix.com' && password === 'admin123') {
+                alert("Admin login successful!");
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('adminDashboard').style.display = 'block';
+                document.getElementById('workerDashboard').style.display = 'none';
+            } else if (email === 'john@fenix.com' && password === 'worker123') {
+                alert("Worker login successful!");
+                document.getElementById('loginScreen').style.display = 'none';
+                document.getElementById('adminDashboard').style.display = 'none';
+                document.getElementById('workerDashboard').style.display = 'block';
+            } else {
+                alert("Invalid credentials!");
+            }
+        }
+        
+        function logout() {
+            alert("Logging out...");
+            document.getElementById('loginScreen').style.display = 'block';
+            document.getElementById('adminDashboard').style.display = 'none';
+            document.getElementById('workerDashboard').style.display = 'none';
+        }
+        
+        // Test if JavaScript is working
+        alert("Page loaded! JavaScript is working.");
+        console.log("JavaScript is working!");
+    </script>
+</body>
+</html> 

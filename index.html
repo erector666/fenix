@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FENIX Construction Tracker</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+                'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+                sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        const { 
+            Clock, MapPin, Camera, Play, Pause, Square, Car, Fuel, Users, 
+            Calendar, BarChart3, Settings, LogOut 
+        } = lucide;
+
+        const EmployeeTrackingApp = () => {
+            const [currentUser, setCurrentUser] = useState(null);
+            const [isAdmin, setIsAdmin] = useState(false);
+            const [currentView, setCurrentView] = useState('login');
+            const [workSession, setWorkSession] = useState(null);
+            const [location, setLocation] = useState(null);
+            const [employees, setEmployees] = useState([
+                { id: 1, name: 'John Doe', email: 'john@fenix.com', password: 'worker123' },
+                { id: 2, name: 'Jane Smith', email: 'jane@fenix.com', password: 'worker123' },
+                { id: 3, name: 'Mike Johnson', email: 'mike@fenix.com', password: 'worker123' }
+            ]);
+            const [workLogs, setWorkLogs] = useState([]);
+            const [vehicles] = useState([
+                { id: 1, name: 'Van #1', plate: 'ABC-123' },
+                { id: 2, name: 'Van #2', plate: 'DEF-456' },
+                { id: 3, name: 'Truck #1', plate: 'GHI-789' },
+                { id: 4, name: 'Personal Car', plate: 'Own Vehicle' }
+            ]);
+
+            // Login Component
+            const LoginForm = () => {
+                const [email, setEmail] = useState('');
+                const [password, setPassword] = useState('');
+
+                const handleLogin = () => {
+                    // Check for admin login
+                    if (email === 'admin@fenix.com' && password === 'admin123') {
+                        setCurrentUser({ id: 0, name: 'Admin', email: 'admin@fenix.com' });
+                        setIsAdmin(true);
+                        setCurrentView('admin');
+                        return;
+                    }
+
+                    // Check for employee login
+                    const employee = employees.find(emp => emp.email === email && emp.password === password);
+                    if (employee) {
+                        setCurrentUser(employee);
+                        setIsAdmin(false);
+                        setCurrentView('employee');
+                        getCurrentLocation();
+                    } else {
+                        alert('Invalid credentials');
+                    }
+                };
+
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-lg shadow-xl p-8 w-full max-w-md">
+                            <div className="text-center mb-8">
+                                <h1 className="text-3xl font-bold text-gray-800 mb-2">FENIX</h1>
+                                <p className="text-gray-600">Construction Tracker</p>
+                            </div>
+                            
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        placeholder="Enter your email"
+                                        required
+                                    />
+                                </div>
+                                
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                                    <input
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                        placeholder="Enter your password"
+                                        required
+                                    />
+                                </div>
+                                
+                                <button
+                                    onClick={handleLogin}
+                                    className="w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 transition duration-200"
+                                >
+                                    Login
+                                </button>
+                            </div>
+                            
+                            <div className="mt-6 text-sm text-gray-600 text-center">
+                                <p>Demo Credentials:</p>
+                                <p>Admin: admin@fenix.com / admin123</p>
+                                <p>Worker: john@fenix.com / worker123</p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // Get current location
+            const getCurrentLocation = () => {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            setLocation({
+                                latitude: position.coords.latitude,
+                                longitude: position.coords.longitude,
+                                timestamp: new Date().toISOString()
+                            });
+                        },
+                        (error) => {
+                            console.error('Error getting location:', error);
+                            setLocation({ error: 'Location not available' });
+                        }
+                    );
+                }
+            };
+
+            // Employee Dashboard Component
+            const EmployeeDashboard = () => {
+                const [selectedVehicle, setSelectedVehicle] = useState('');
+                const [gasAmount, setGasAmount] = useState('');
+                const [screenshot, setScreenshot] = useState(null);
+                const [showVehicleModal, setShowVehicleModal] = useState(false);
+
+                const startWork = () => {
+                    if (!selectedVehicle) {
+                        setShowVehicleModal(true);
+                        return;
+                    }
+
+                    const session = {
+                        id: Date.now(),
+                        employeeId: currentUser.id,
+                        employeeName: currentUser.name,
+                        startTime: new Date().toISOString(),
+                        startLocation: location,
+                        vehicle: vehicles.find(v => v.id === parseInt(selectedVehicle)),
+                        gasAmount: parseFloat(gasAmount) || 0,
+                        screenshots: [],
+                        breaks: [],
+                        status: 'working'
+                    };
+
+                    setWorkSession(session);
+                    setWorkLogs([...workLogs, session]);
+                };
+
+                const takeBreak = () => {
+                    if (workSession) {
+                        const updatedSession = {
+                            ...workSession,
+                            breaks: [...workSession.breaks, {
+                                start: new Date().toISOString(),
+                                location: location
+                            }],
+                            status: 'break'
+                        };
+                        setWorkSession(updatedSession);
+                        updateWorkLog(updatedSession);
+                    }
+                };
+
+                const resumeWork = () => {
+                    if (workSession && workSession.breaks.length > 0) {
+                        const lastBreak = workSession.breaks[workSession.breaks.length - 1];
+                        lastBreak.end = new Date().toISOString();
+                        
+                        const updatedSession = {
+                            ...workSession,
+                            status: 'working'
+                        };
+                        setWorkSession(updatedSession);
+                        updateWorkLog(updatedSession);
+                    }
+                };
+
+                const endWork = () => {
+                    if (workSession) {
+                        const updatedSession = {
+                            ...workSession,
+                            endTime: new Date().toISOString(),
+                            endLocation: location,
+                            status: 'completed'
+                        };
+                        setWorkSession(null);
+                        updateWorkLog(updatedSession);
+                    }
+                };
+
+                const updateWorkLog = (session) => {
+                    setWorkLogs(logs => logs.map(log => 
+                        log.id === session.id ? session : log
+                    ));
+                };
+
+                const takeScreenshot = () => {
+                    // Simulate screenshot capture
+                    const screenshotData = {
+                        id: Date.now(),
+                        timestamp: new Date().toISOString(),
+                        location: location,
+                        type: 'work_progress'
+                    };
+
+                    if (workSession) {
+                        const updatedSession = {
+                            ...workSession,
+                            screenshots: [...workSession.screenshots, screenshotData]
+                        };
+                        setWorkSession(updatedSession);
+                        updateWorkLog(updatedSession);
+                    }
+
+                    setScreenshot(screenshotData);
+                    setTimeout(() => setScreenshot(null), 3000);
+                };
+
+                return (
+                    <div className="min-h-screen bg-gray-100">
+                        {/* Header */}
+                        <div className="bg-white shadow-sm border-b">
+                            <div className="px-4 py-3 flex justify-between items-center">
+                                <h1 className="text-xl font-bold text-gray-800">Welcome, {currentUser.name}</h1>
+                                <button
+                                    onClick={() => {
+                                        setCurrentUser(null);
+                                        setCurrentView('login');
+                                        setWorkSession(null);
+                                    }}
+                                    className="text-gray-500 hover:text-gray-700"
+                                >
+                                    <LogOut size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="p-4 space-y-4">
+                            {/* Status Card */}
+                            <div className="bg-white rounded-lg shadow p-4">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h2 className="text-lg font-semibold">Work Status</h2>
+                                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                                        workSession ? 
+                                            workSession.status === 'working' ? 'bg-green-100 text-green-800' :
+                                            workSession.status === 'break' ? 'bg-yellow-100 text-yellow-800' : 
+                                            'bg-gray-100 text-gray-800'
+                                        : 'bg-gray-100 text-gray-800'
+                                    }`}>
+                                        {workSession ? 
+                                            workSession.status === 'working' ? 'Working' :
+                                            workSession.status === 'break' ? 'On Break' : 'Idle'
+                                        : 'Not Started'}
+                                    </div>
+                                </div>
+
+                                {workSession && (
+                                    <div className="space-y-2 text-sm text-gray-600">
+                                        <p><span className="font-medium">Started:</span> {new Date(workSession.startTime).toLocaleString()}</p>
+                                        <p><span className="font-medium">Vehicle:</span> {workSession.vehicle?.name}</p>
+                                        <p><span className="font-medium">Gas:</span> {workSession.gasAmount} L</p>
+                                        <p><span className="font-medium">Screenshots:</span> {workSession.screenshots.length}</p>
+                                        <p><span className="font-medium">Breaks:</span> {workSession.breaks.length}</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Location Card */}
+                            <div className="bg-white rounded-lg shadow p-4">
+                                <div className="flex items-center mb-2">
+                                    <MapPin className="text-orange-500 mr-2" size={20} />
+                                    <h3 className="font-semibold">Current Location</h3>
+                                </div>
+                                {location ? (
+                                    location.error ? (
+                                        <p className="text-red-500 text-sm">{location.error}</p>
+                                    ) : (
+                                        <p className="text-sm text-gray-600">
+                                            {location.latitude?.toFixed(6)}, {location.longitude?.toFixed(6)}
+                                        </p>
+                                    )
+                                ) : (
+                                    <p className="text-gray-500 text-sm">Getting location...</p>
+                                )}
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="space-y-3">
+                                {!workSession ? (
+                                    <button
+                                        onClick={startWork}
+                                        className="w-full bg-green-500 text-white py-4 px-6 rounded-lg flex items-center justify-center space-x-2 hover:bg-green-600 transition duration-200"
+                                    >
+                                        <Play size={20} />
+                                        <span className="font-semibold">Start Work</span>
+                                    </button>
+                                ) : (
+                                    <>
+                                        {workSession.status === 'working' ? (
+                                            <button
+                                                onClick={takeBreak}
+                                                className="w-full bg-yellow-500 text-white py-4 px-6 rounded-lg flex items-center justify-center space-x-2 hover:bg-yellow-600 transition duration-200"
+                                            >
+                                                <Pause size={20} />
+                                                <span className="font-semibold">Take Break</span>
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={resumeWork}
+                                                className="w-full bg-blue-500 text-white py-4 px-6 rounded-lg flex items-center justify-center space-x-2 hover:bg-blue-600 transition duration-200"
+                                            >
+                                                <Play size={20} />
+                                                <span className="font-semibold">Resume Work</span>
+                                            </button>
+                                        )}
+
+                                        <button
+                                            onClick={takeScreenshot}
+                                            className="w-full bg-purple-500 text-white py-4 px-6 rounded-lg flex items-center justify-center space-x-2 hover:bg-purple-600 transition duration-200"
+                                        >
+                                            <Camera size={20} />
+                                            <span className="font-semibold">Take Screenshot</span>
+                                        </button>
+
+                                        <button
+                                            onClick={endWork}
+                                            className="w-full bg-red-500 text-white py-4 px-6 rounded-lg flex items-center justify-center space-x-2 hover:bg-red-600 transition duration-200"
+                                        >
+                                            <Square size={20} />
+                                            <span className="font-semibold">End Work</span>
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Vehicle Selection Modal */}
+                        {showVehicleModal && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                                <div className="bg-white rounded-lg p-6 w-full max-w-md">
+                                    <h3 className="text-lg font-semibold mb-4">Select Vehicle & Gas</h3>
+                                    
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Vehicle</label>
+                                            <select
+                                                value={selectedVehicle}
+                                                onChange={(e) => setSelectedVehicle(e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                                required
+                                            >
+                                                <option value="">Select a vehicle</option>
+                                                {vehicles.map(vehicle => (
+                                                    <option key={vehicle.id} value={vehicle.id}>
+                                                        {vehicle.name} ({vehicle.plate})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-2">Gas Amount (Liters)</label>
+                                            <input
+                                                type="number"
+                                                value={gasAmount}
+                                                onChange={(e) => setGasAmount(e.target.value)}
+                                                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                                placeholder="Enter gas amount"
+                                                min="0"
+                                                step="0.1"
+                                            />
+                                        </div>
+
+                                        <div className="flex space-x-3">
+                                            <button
+                                                onClick={() => setShowVehicleModal(false)}
+                                                className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-400 transition duration-200"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    if (selectedVehicle) {
+                                                        setShowVehicleModal(false);
+                                                        startWork();
+                                                    }
+                                                }}
+                                                className="flex-1 bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 transition duration-200"
+                                            >
+                                                Start Work
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Screenshot Notification */}
+                        {screenshot && (
+                            <div className="fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50">
+                                <div className="flex items-center space-x-2">
+                                    <Camera size={16} />
+                                    <span>Screenshot captured!</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            };
+
+            // Admin Dashboard Component
+            const AdminDashboard = () => {
+                const [activeTab, setActiveTab] = useState('overview');
+
+                const calculateWorkHours = (log) => {
+                    if (!log.startTime || !log.endTime) return 0;
+                    
+                    const start = new Date(log.startTime);
+                    const end = new Date(log.endTime);
+                    const totalMs = end - start;
+                    
+                    // Subtract break time
+                    const breakMs = log.breaks.reduce((total, breakItem) => {
+                        if (breakItem.start && breakItem.end) {
+                            const breakStart = new Date(breakItem.start);
+                            const breakEnd = new Date(breakItem.end);
+                            return total + (breakEnd - breakStart);
+                        }
+                        return total;
+                    }, 0);
+                    
+                    return Math.max(0, (totalMs - breakMs) / (1000 * 60 * 60)); // Convert to hours
+                };
+
+                const getTotalHoursThisMonth = (employeeId) => {
+                    const now = new Date();
+                    const currentMonth = now.getMonth();
+                    const currentYear = now.getFullYear();
+                    
+                    return workLogs
+                        .filter(log => {
+                            const logDate = new Date(log.startTime);
+                            return log.employeeId === employeeId && 
+                                   logDate.getMonth() === currentMonth && 
+                                   logDate.getFullYear() === currentYear &&
+                                   log.status === 'completed';
+                        })
+                        .reduce((total, log) => total + calculateWorkHours(log), 0);
+                };
+
+                const OverviewTab = () => (
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="bg-white rounded-lg shadow p-6">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-600">Active Workers</p>
+                                        <p className="text-2xl font-bold text-gray-900">
+                                            {workLogs.filter(log => log.status === 'working' || log.status === 'break').length}
+                                        </p>
+                                    </div>
+                                    <Users className="text-orange-500" size={24} />
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-lg shadow p-6">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-600">Total Hours Today</p>
+                                        <p className="text-2xl font-bold text-gray-900">
+                                            {workLogs
+                                                .filter(log => {
+                                                    const today = new Date().toDateString();
+                                                    return new Date(log.startTime).toDateString() === today;
+                                                })
+                                                .reduce((total, log) => total + calculateWorkHours(log), 0)
+                                                .toFixed(1)}
+                                        </p>
+                                    </div>
+                                    <Clock className="text-orange-500" size={24} />
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-lg shadow p-6">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-medium text-gray-600">Completed Jobs</p>
+                                        <p className="text-2xl font-bold text-gray-900">
+                                            {workLogs.filter(log => log.status === 'completed').length}
+                                        </p>
+                                    </div>
+                                    <BarChart3 className="text-orange-500" size={24} />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-lg shadow">
+                            <div className="px-6 py-4 border-b">
+                                <h3 className="text-lg font-semibold">Recent Activity</h3>
+                            </div>
+                            <div className="divide-y">
+                                {workLogs.slice(-5).reverse().map((log, index) => (
+                                    <div key={index} className="px-6 py-4">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <p className="font-medium">{log.employeeName}</p>
+                                                <p className="text-sm text-gray-600">
+                                                    {log.status === 'completed' ? 'Completed work' : 
+                                                     log.status === 'working' ? 'Started work' : 'On break'}
+                                                </p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-sm text-gray-600">
+                                                    {new Date(log.startTime).toLocaleString()}
+                                                </p>
+                                                {log.status === 'completed' && (
+                                                    <p className="text-sm font-medium text-green-600">
+                                                        {calculateWorkHours(log).toFixed(1)}h
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+
+                const EmployeesTab = () => (
+                    <div className="space-y-4">
+                        {employees.map(employee => (
+                            <div key={employee.id} className="bg-white rounded-lg shadow p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div>
+                                        <h3 className="text-lg font-semibold">{employee.name}</h3>
+                                        <p className="text-gray-600">{employee.email}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-sm text-gray-600">This Month</p>
+                                        <p className="text-2xl font-bold text-orange-500">
+                                            {getTotalHoursThisMonth(employee.id).toFixed(1)}h
+                                        </p>
+                                    </div>
+                                </div>
+                                
+                                <div className="space-y-2">
+                                    {workLogs
+                                        .filter(log => log.employeeId === employee.id)
+                                        .slice(-3)
+                                        .map((log, index) => (
+                                            <div key={index} className="flex justify-between items-center text-sm">
+                                                <span>{new Date(log.startTime).toLocaleDateString()}</span>
+                                                <span className={`px-2 py-1 rounded-full text-xs ${
+                                                    log.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                                    log.status === 'working' ? 'bg-blue-100 text-blue-800' :
+                                                    'bg-yellow-100 text-yellow-800'
+                                                }`}>
+                                                    {log.status === 'completed' ? `${calculateWorkHours(log).toFixed(1)}h` : log.status}
+                                                </span>
+                                            </div>
+                                        ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                );
+
+                const ReportsTab = () => (
+                    <div className="space-y-6">
+                        <div className="bg-white rounded-lg shadow p-6">
+                            <h3 className="text-lg font-semibold mb-4">Monthly Report</h3>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b">
+                                            <th className="text-left py-2">Employee</th>
+                                            <th className="text-left py-2">Total Hours</th>
+                                            <th className="text-left py-2">Days Worked</th>
+                                            <th className="text-left py-2">Avg Hours/Day</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {employees.map(employee => {
+                                            const totalHours = getTotalHoursThisMonth(employee.id);
+                                            const daysWorked = new Set(
+                                                workLogs
+                                                    .filter(log => log.employeeId === employee.id && log.status === 'completed')
+                                                    .map(log => new Date(log.startTime).toDateString())
+                                            ).size;
+                                            const avgHours = daysWorked > 0 ? totalHours / daysWorked : 0;
+                                            
+                                            return (
+                                                <tr key={employee.id} className="border-b">
+                                                    <td className="py-2 font-medium">{employee.name}</td>
+                                                    <td className="py-2">{totalHours.toFixed(1)}h</td>
+                                                    <td className="py-2">{daysWorked}</td>
+                                                    <td className="py-2">{avgHours.toFixed(1)}h</td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                );
+
+                return (
+                    <div className="min-h-screen bg-gray-100">
+                        {/* Header */}
+                        <div className="bg-white shadow-sm border-b">
+                            <div className="px-6 py-4 flex justify-between items-center">
+                                <h1 className="text-2xl font-bold text-gray-800">Admin Dashboard</h1>
+                                <button
+                                    onClick={() => {
+                                        setCurrentUser(null);
+                                        setCurrentView('login');
+                                    }}
+                                    className="text-gray-500 hover:text-gray-700"
+                                >
+                                    <LogOut size={20} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Tabs */}
+                        <div className="bg-white border-b">
+                            <div className="px-6">
+                                <nav className="flex space-x-8">
+                                    {[
+                                        { id: 'overview', label: 'Overview', icon: BarChart3 },
+                                        { id: 'employees', label: 'Employees', icon: Users },
+                                        { id: 'reports', label: 'Reports', icon: Calendar }
+                                    ].map((tab) => (
+                                        <button
+                                            key={tab.id}
+                                            onClick={() => setActiveTab(tab.id)}
+                                            className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
+                                                activeTab === tab.id
+                                                    ? 'border-orange-500 text-orange-600'
+                                                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                                            }`}
+                                        >
+                                            <tab.icon size={16} />
+                                            <span>{tab.label}</span>
+                                        </button>
+                                    ))}
+                                </nav>
+                            </div>
+                        </div>
+
+                        {/* Content */}
+                        <div className="p-6">
+                            {activeTab === 'overview' && <OverviewTab />}
+                            {activeTab === 'employees' && <EmployeesTab />}
+                            {activeTab === 'reports' && <ReportsTab />}
+                        </div>
+                    </div>
+                );
+            };
+
+            // Main render
+            if (currentView === 'login') {
+                return <LoginForm />;
+            }
+
+            if (currentView === 'admin') {
+                return <AdminDashboard />;
+            }
+
+            if (currentView === 'employee') {
+                return <EmployeeDashboard />;
+            }
+
+            return null;
+        };
+
+        // Render the app
+        ReactDOM.render(<EmployeeTrackingApp />, document.getElementById('root'));
+    </script>
+</body>
+</html> 
