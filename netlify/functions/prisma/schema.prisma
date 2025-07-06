@@ -1,0 +1,150 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Database configuration - supports PostgreSQL, MySQL, and MongoDB
+datasource db {
+  provider = "postgresql" // Change to "mysql" or "mongodb" as needed
+  url      = env("DATABASE_URL")
+}
+
+// User/Employee model
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  name      String
+  password  String   // Hashed password
+  role      UserRole @default(EMPLOYEE)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  workSessions WorkSession[]
+  locations    Location[]
+  vehicles     Vehicle[]
+
+  @@map("users")
+}
+
+// Vehicle model
+model Vehicle {
+  id          Int      @id @default(autoincrement())
+  name        String
+  plate       String   @unique
+  type        VehicleType
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  workSessions WorkSession[]
+  users        User[]
+
+  @@map("vehicles")
+}
+
+// Work Session model
+model WorkSession {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  vehicleId       Int?
+  startTime       DateTime
+  endTime         DateTime?
+  startLocation   Json      // {latitude: number, longitude: number}
+  endLocation     Json?     // {latitude: number, longitude: number}
+  workDescription String?
+  startKilometers Float?    // Vehicle odometer reading at start
+  endKilometers   Float?    // Vehicle odometer reading at end
+  totalKilometers Float?    // Calculated distance traveled
+  status          SessionStatus @default(ACTIVE)
+  totalHours      Float?
+  breakDuration   Int       @default(0) // in minutes
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  // Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle Vehicle? @relation(fields: [vehicleId], references: [id])
+  breaks  Break[]
+  locations Location[]
+
+  @@map("work_sessions")
+}
+
+// Break model for tracking breaks during work sessions
+model Break {
+  id            Int      @id @default(autoincrement())
+  workSessionId Int
+  startTime     DateTime
+  endTime       DateTime?
+  duration      Int?     // in minutes
+  reason        String?
+  createdAt     DateTime @default(now())
+
+  // Relations
+  workSession WorkSession @relation(fields: [workSessionId], references: [id], onDelete: Cascade)
+
+  @@map("breaks")
+}
+
+// Location tracking model
+model Location {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  workSessionId Int?
+  latitude      Float
+  longitude     Float
+  accuracy      Float?
+  timestamp     DateTime @default(now())
+  address       String?
+  isActive      Boolean  @default(true)
+
+  // Relations
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workSession WorkSession? @relation(fields: [workSessionId], references: [id])
+
+  @@map("locations")
+}
+
+// System settings model
+model SystemSetting {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("system_settings")
+}
+
+// Enums
+enum UserRole {
+  ADMIN
+  EMPLOYEE
+  MANAGER
+}
+
+enum VehicleType {
+  VAN
+  TRUCK
+  CAR
+  MOTORCYCLE
+  OTHER
+}
+
+enum SessionStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+// Indexes for better performance
+@@index([userId, startTime], name: "work_sessions_user_time")
+@@index([status], name: "work_sessions_status")
+@@index([userId, timestamp], name: "locations_user_time")
+@@index([workSessionId], name: "locations_session") 

@@ -70,6 +70,67 @@ npm run server  # Backend API
 npm start       # React frontend
 ```
 
+## 🌐 Vercel Deployment with Database
+
+### Step 1: Set Up PostgreSQL Database
+
+**Option A: Vercel Postgres (Recommended)**
+1. Go to your Vercel dashboard
+2. Navigate to Storage → Create Database
+3. Choose PostgreSQL
+4. Select your region
+5. Copy the connection string
+
+**Option B: External PostgreSQL Providers**
+- **Supabase** (Free tier available)
+- **Neon** (Free tier available)
+- **Railway** (Free tier available)
+- **PlanetScale** (MySQL, free tier available)
+
+### Step 2: Configure Environment Variables
+
+In your Vercel dashboard, add these environment variables:
+
+```env
+# Database
+DATABASE_URL=postgresql://username:password@host:port/database
+
+# JWT Secret
+JWT_SECRET=your-super-secret-jwt-key-here
+
+# App Configuration
+NODE_ENV=production
+PORT=3000
+
+# Frontend API URL
+REACT_APP_API_URL=https://your-vercel-app.vercel.app/api
+```
+
+### Step 3: Deploy to Vercel
+
+```bash
+# Deploy using the script
+./deploy-vercel.ps1
+
+# Or manually
+vercel --prod
+```
+
+### Step 4: Set Up Database Schema
+
+After deployment, run these commands:
+
+```bash
+# Generate Prisma client
+npm run db:generate
+
+# Push schema to production database
+npm run db:push
+
+# Seed with initial data
+npm run db:seed
+```
+
 ## 🗄️ Database Providers
 
 ### PostgreSQL (Recommended)

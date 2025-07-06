@@ -2,6 +2,10 @@
   "version": 2,
   "builds": [
     {
+      "src": "server/index.js",
+      "use": "@vercel/node"
+    },
+    {
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
@@ -10,6 +14,10 @@
     }
   ],
   "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/server/index.js"
+    },
     {
       "src": "/static/(.*)",
       "dest": "/static/$1"
@@ -20,6 +28,6 @@
     }
   ],
   "env": {
-    "REACT_APP_API_URL": "https://your-api-url.vercel.app"
+    "REACT_APP_API_URL": "https://your-vercel-app.vercel.app/api"
   }
 } 

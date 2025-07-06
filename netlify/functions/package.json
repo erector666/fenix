@@ -1,0 +1,19 @@
+{
+  "name": "fenix-netlify-functions",
+  "version": "1.0.0",
+  "description": "Netlify Functions for FENIX Construction Tracker",
+  "main": "api.js",
+  "dependencies": {
+    "@prisma/client": "^5.7.1",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "prisma": "^5.7.1"
+  },
+  "scripts": {
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:seed": "node ../../server/seed.js"
+  }
+} 
