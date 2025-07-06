@@ -34,5 +34,10 @@
   },
   "env": {
     "REACT_APP_API_URL": "/api"
+  },
+  "build": {
+    "env": {
+      "PRISMA_GENERATE_DATAPROXY": "true"
+    }
   }
 } 

@@ -34,7 +34,8 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "vercel-build": "npm run db:generate && npm run build",
+    "vercel-build": "npm run build",
+    "postinstall": "prisma generate",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "setup-env": "node setup-env.js",
