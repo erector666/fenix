@@ -198,3 +198,34 @@ FENIX Construction is a leading construction company dedicated to building bette
 ---
 
 **Built with ❤️ by FENIX Construction Team** 
+
+```json
+{
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "vercel-build": "npm run build",
+    "postinstall": "prisma generate",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject",
+    "setup-env": "node setup-env.js",
+    "setup": "node setup-env.js",
+    "server": "node server/index.js",
+    "dev": "concurrently \"npm run server\" \"npm start\"",
+    "db:generate": "prisma generate",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "db:seed": "node server/seed.js",
+    "db:migrate-km": "node server/migrate-kilometers.js",
+    "build:prod": "npm run build",
+    "build:android": "npm run build && npx cap sync android",
+    "build:android:release": "npm run build && npx cap sync android && cd android && ./gradlew assembleRelease",
+    "deploy:web": "npm run build:prod",
+    "deploy:android": "npm run build:android",
+    "publish:prepare": "npm run build:prod && npm run test",
+    "clean": "rm -rf build node_modules package-lock.json && npm install",
+    "build:production": "node scripts/build-production.js"
+  }
+}
+``` 

@@ -4,12 +4,26 @@
   "private": false,
   "homepage": ".",
   "description": "FENIX Construction Tracker - Professional employee tracking and management system for construction companies",
-  "keywords": ["construction", "tracking", "employee", "gps", "management", "react", "capacitor"],
+  "keywords": [
+    "construction",
+    "tracking",
+    "employee",
+    "gps",
+    "management",
+    "react",
+    "capacitor",
+    "vercel",
+    "prisma"
+  ],
   "author": "FENIX Construction",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/erector666/fenix.git"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   },
   "dependencies": {
     "@capacitor/android": "^7.4.1",
@@ -55,7 +69,14 @@
     "deploy:android": "npm run build:android",
     "publish:prepare": "npm run build:prod && npm run test",
     "clean": "rm -rf build node_modules package-lock.json && npm install",
-    "build:production": "node scripts/build-production.js"
+    "build:production": "node scripts/build-production.js",
+    "optimize": "node scripts/optimize-production.js",
+    "vercel-deploy": "vercel --prod",
+    "vercel-dev": "vercel dev",
+    "lint": "eslint src/**/*.{js,jsx}",
+    "lint:fix": "eslint src/**/*.{js,jsx} --fix",
+    "type-check": "tsc --noEmit",
+    "analyze": "npm run build && npx webpack-bundle-analyzer build/static/js/*.js"
   },
   "eslintConfig": {
     "extends": [
@@ -83,6 +104,3 @@
     "tailwindcss": "^3.3.0"
   }
 }
-
-
-
