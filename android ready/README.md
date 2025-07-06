@@ -1,3 +1,4 @@
+$env:GIT_CURL_VERBOSE=1; git push origin master
 # 🏗️ FENIX Construction Tracker
 
 A professional employee tracking and management system designed specifically for construction companies. Track worker locations, manage work sessions, monitor vehicle usage, and generate comprehensive reports.
