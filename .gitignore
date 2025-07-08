@@ -1,4 +1,4 @@
-# 🏗️ FENIX Construction Tracker - Git Ignore
+# 🏗️ FENIX Construction Tracker - Git Ignore (Updated)
 
 # =============================================================================
 # 🔐 ENVIRONMENT FILES
@@ -226,4 +226,84 @@ deploy/icons/output/
 # - User data
 # - Production credentials
 
-# Always use environment variables for sensitive data! 
+# Always use environment variables for sensitive data!
+
+# Node modules and lock files
+node_modules/
+
+# Build and output directories
+build/
+dist/
+out/
+.next/
+.nuxt/
+.vuepress/dist
+release/
+
+# Mobile and deployment folders
+android/
+android ready/
+my-app/
+my-react-router-app/
+netlify/
+supabase/
+vercel rdy/
+deploy/
+BACKBONE FENIX/
+gitlab/
+shit/
+
+# IDE/editor config
+.vscode/
+.idea/
+
+# System/OS files
+.DS_Store
+Thumbs.db
+
+# Logs and temp
+logs/
+*.log
+tmp/
+temp/
+.cache/
+
+# Test, backup, and example files
+*.test.js
+*.test.ts
+*.bak
+*.backup
+*.db
+*.sqlite
+*.sqlite3
+
+# Binaries and large assets
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.mp4
+*.mov
+*.avi
+*.wmv
+*.apk
+*.aab
+*.ipa
+*.rtf
+
+# Env files (except example)
+.env
+.env.*
+!.env.example
+
+# SSL/Secrets
+*.pem
+*.key
+*.crt
+*.csr
+secrets.json
+config.json
+credentials.json
+
+# Only track these essential files/folders:
+# (src/, server/, prisma/, public/, package.json, package-lock.json, README.md, .env.example, vercel.json, scripts/, tailwind.config.js, postcss.config.js, CHANGELOG.md) 
