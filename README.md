@@ -64,13 +64,14 @@
 - **Node.js** - Server runtime
 - **Express.js** - Web framework
 - **Prisma ORM** - Database toolkit
-- **PostgreSQL** - Primary database
+- **PostgreSQL** - Primary database (via Supabase)
+- **Supabase** - Backend-as-a-Service platform
 - **JWT** - Authentication tokens
 - **bcrypt** - Password hashing
 
 ### Deployment
 - **Vercel** - Serverless deployment platform
-- **Vercel Postgres** - Managed PostgreSQL database
+- **Supabase** - Database, Auth, Storage, and Real-time
 - **Capacitor** - Mobile app framework
 
 ### Development Tools
@@ -82,10 +83,48 @@
 
 ### Prerequisites
 - Node.js 18+ and npm 8+
-- PostgreSQL database
+- Supabase account (free tier available)
 - Git
 
-### Local Development
+### Option 1: Supabase Setup (Recommended)
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/erector666/fenix.git
+   cd fenix
+   ```
+
+2. **Run automated setup**
+   ```bash
+   # Windows
+   quick-supabase-setup.bat
+   
+   # PowerShell
+   .\quick-supabase-setup.ps1
+   
+   # Manual setup
+   npm run setup-supabase
+   ```
+
+3. **Update environment variables**
+   ```bash
+   # Edit .env with your Supabase credentials
+   DATABASE_URL="postgresql://postgres:@rUXdQLZKkmIEtKIM@ofahxcdnwdmucrvipfbu.supabase.co:5432/postgres"
+   SUPABASE_URL="https://ofahxcdnwdmucrvipfbu.supabase.co"
+   SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mYWh4Y2Rud2RtdWNydmlwZmJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE4MTYwNjIsImV4cCI6MjA2NzM5MjA2Mn0.nqwmer6wYir9RmPBpbQsx22B9RdNRGvL_4-U2-STw4Q"
+   ```
+
+4. **Start development server**
+   ```bash
+   npm run dev
+   ```
+
+5. **Open your browser**
+   ```
+   http://localhost:3000
+   ```
+
+### Option 2: Manual Setup
 
 1. **Clone the repository**
    ```bash
@@ -100,7 +139,7 @@
 
 3. **Set up environment variables**
    ```bash
-   cp env.production.example .env
+   cp env.example .env
    # Edit .env with your database connection string and JWT secret
    ```
 
@@ -127,23 +166,32 @@
 
 ## 🚀 Deployment
 
-### Vercel Deployment (Recommended)
+### Supabase + Vercel Deployment (Recommended)
 
-1. **Click the Deploy Button**
+1. **Set up Supabase**
+   - Follow the [Supabase Setup Guide](./SUPABASE_DEPLOYMENT.md)
+   - Your Supabase project is already configured with the provided credentials
+
+2. **Deploy to Vercel**
    [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/erector666/fenix.git)
 
-2. **Set Environment Variables**
+3. **Set Environment Variables in Vercel**
    ```env
-   DATABASE_URL=your-postgresql-connection-string
-   JWT_SECRET=your-super-secret-jwt-key
-   NODE_ENV=production
+   DATABASE_URL="postgresql://postgres:@rUXdQLZKkmIEtKIM@ofahxcdnwdmucrvipfbu.supabase.co:5432/postgres"
+   SUPABASE_URL="https://ofahxcdnwdmucrvipfbu.supabase.co"
+   SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mYWh4Y2Rud2RtdWNydmlwZmJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE4MTYwNjIsImV4cCI6MjA2NzM5MjA2Mn0.nqwmer6wYir9RmPBpbQsx22B9RdNRGvL_4-U2-STw4Q"
+   SUPABASE_SERVICE_ROLE_KEY="your-service-role-key"
+   JWT_SECRET="your-super-secret-jwt-key"
+   NODE_ENV="production"
    ```
 
-3. **Deploy!** Your app will be live in minutes.
+4. **Deploy!** Your app will be live in minutes.
 
-### Manual Deployment
+### Alternative Deployments
 
-See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed instructions.
+- **Vercel + Neon**: See [VERCEL_DEPLOYMENT.md](./VERCEL_DEPLOYMENT.md)
+- **Netlify + Neon**: See [NETLIFY_NEON_DEPLOYMENT.md](./NETLIFY_NEON_DEPLOYMENT.md)
+- **Manual Setup**: See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
 
 ## 📚 API Documentation
 
